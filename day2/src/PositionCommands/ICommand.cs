@@ -1,4 +1,4 @@
-namespace day2;
+namespace day2.PositionCommands;
 
 internal interface ICommand
 {

@@ -1,5 +1,7 @@
 namespace day2;
 
+using day2.PositionCommands;
+
 internal class PositionUpdater
 {
     public Position GetPosition(string[] commands)
@@ -12,7 +14,7 @@ internal class PositionUpdater
         Position updatablePosition = initialPosition;
         foreach(var command in commands)
         {
-            updatablePosition = new CommandFactory().GetCommand(command).Apply(updatablePosition);
+            updatablePosition = new PositionCommandFactory().GetCommand(command).Apply(updatablePosition);
         }
         return updatablePosition;
     }

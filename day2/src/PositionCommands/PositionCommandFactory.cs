@@ -1,6 +1,6 @@
-namespace day2;
+namespace day2.PositionCommands;
 
-internal class CommandFactory
+internal class PositionCommandFactory
 {
     public ICommand GetCommand(string command)
     {
