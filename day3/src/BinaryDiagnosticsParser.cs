@@ -14,12 +14,17 @@ internal class BinaryDiagnosticsParser
         }
 
         var gammaRate = FindGammaRate(binaryDiagnostics);
-        var maskForBitsWeCareAbout = (long)Math.Pow(2, binaryDiagnostics[0].Length) - 1;
         return new Diagnostics
         {
             GammaRate = gammaRate,
-            EpsilonRate = ~gammaRate & maskForBitsWeCareAbout
+            EpsilonRate = FindEpsilonRate(gammaRate, binaryDiagnostics[0].Length)
         };
+    }
+
+    private long FindEpsilonRate(long gammaRate, int numberOfBitsToCareAbout)
+    {
+        var maskForBitsWeCareAbout = (long)Math.Pow(2, numberOfBitsToCareAbout) - 1;
+        return ~gammaRate & maskForBitsWeCareAbout;
     }
 
     private static long FindGammaRate(string[] binaryDiagnostics)

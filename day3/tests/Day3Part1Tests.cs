@@ -1,8 +1,5 @@
 using NUnit.Framework;
 using FluentAssertions;
-using System;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace day3.tests;
 
