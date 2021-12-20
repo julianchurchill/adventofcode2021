@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
@@ -85,10 +84,85 @@ public class Day9Tests
     }
 
     [Test]
-    public void GoldenInput()
+    public void TwoBasinsSeparatedByAWallOf9s()
+    {
+        ProductOf3BiggestBasins(new int[][] {
+            new int[] {1,9,1},
+            new int[] {2,9,2},
+            new int[] {2,9,2}
+        }).Should().Be(9);
+    }
+
+    [Test]
+    public void ThreeBasinsSeparatedByWallsOf9s()
+    {
+        ProductOf3BiggestBasins(new int[][] {
+            new int[] {1,9,2,9,1},
+            new int[] {1,9,2,9,1},
+            new int[] {1,9,2,9,1}
+        }).Should().Be(27);
+    }
+    
+    [Test]
+    public void CalculateProductOfTheBiggest3Basins()
+    {
+        ProductOf3BiggestBasins(new int[][] {
+            new int[] {1,9,2,9,1,9,1},
+            new int[] {9,9,2,9,1,9,1},
+            new int[] {9,9,2,9,1,9,1}
+        }).Should().Be(27);
+    }
+
+    private int ProductOf3BiggestBasins(int[][] input)
+    {
+        var plateaus = new List<List<(int, int)>>();
+        for(var currentLocalMinima = 0; currentLocalMinima < 9; currentLocalMinima++)
+        {
+            HashSet<(int, int)> pointsAtMinima = GetPointsAtMinima(input, currentLocalMinima);
+            var plateau = AssemblePlateaus(pointsAtMinima);
+            plateaus.AddRange(plateau);
+        }
+        var basins = AssembleBasins(plateaus).OrderByDescending(basin => basin.Count());
+        var total = 1;
+        foreach(var basin in basins.Take(3))
+        {
+            total *= basin.Count();
+        }
+        return total;
+    }
+
+    private List<List<(int, int)>> AssembleBasins(List<List<(int, int)>> plateaus)
+    {
+        var basins = new List<List<(int, int)>>();
+        foreach(var plateau in plateaus)
+        {
+            var foundBasin = false;
+            foreach(var basin in basins)
+            {
+                if(basin.Any(p => IsAdjacentToAny(p.Item1, p.Item2, plateau)))
+                {
+                    basin.AddRange(plateau);
+                    foundBasin = true;
+                    break;
+                }
+            }
+            if(foundBasin == false) basins.Add(plateau);
+        }
+        return basins;
+    }
+
+    [Test]
+    public void GoldenInputTestPart1()
     {
         var points = LoadGoldenInput();
         SumLowPointValues(points).Should().Be(518);
+    }
+
+    [Test]
+    public void GoldenInputTestPart2()
+    {
+        var points = LoadGoldenInput();
+        ProductOf3BiggestBasins(points).Should().Be(949905);
     }
 
     private int[][] LoadGoldenInput()
