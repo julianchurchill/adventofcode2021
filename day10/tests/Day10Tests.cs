@@ -10,7 +10,7 @@ public class Tests
     [Test]
     public void NoFailuresIsMinus1()
     {
-        FindFailedSyntaxPosition("").Should().Be(NoSyntaxErrors);
+        AnalyseChunks("").FailedSyntaxPosition.Should().Be(NoSyntaxErrors);
     }
 
     [TestCase("}")]
@@ -19,7 +19,7 @@ public class Tests
     [TestCase(">")]
     public void LoneChunkEndIsFailure(string chunkEnd)
     {
-        FindFailedSyntaxPosition(chunkEnd).Should().Be(0);
+        AnalyseChunks(chunkEnd).FailedSyntaxPosition.Should().Be(0);
     }
 
     [TestCase("{")]
@@ -28,7 +28,7 @@ public class Tests
     [TestCase("<")]
     public void LoneOpeningBraceIsIncomplete(string chunkStart)
     {
-        FindFailedSyntaxPosition(chunkStart).Should().Be(NoSyntaxErrors);
+        AnalyseChunks(chunkStart).FailedSyntaxPosition.Should().Be(NoSyntaxErrors);
     }
 
     [TestCase("{}")]
@@ -37,7 +37,7 @@ public class Tests
     [TestCase("<>")]
     public void PairedBracesIsComplete(string input)
     {
-        FindFailedSyntaxPosition(input).Should().Be(NoSyntaxErrors);
+        AnalyseChunks(input).FailedSyntaxPosition.Should().Be(NoSyntaxErrors);
     }
 
     [TestCase("{]", 1)]
@@ -45,9 +45,44 @@ public class Tests
     [TestCase("{{}[]]", 5)]
     public void UnmatchedChunkEndIsFailure(string input, int failurePosition)
     {
-        FindFailedSyntaxPosition(input).Should().Be(failurePosition);
-        FindFailedSyntaxPosition("{{}]").Should().Be(3);
-        FindFailedSyntaxPosition("{{}[]]").Should().Be(5);
+        AnalyseChunks(input).FailedSyntaxPosition.Should().Be(failurePosition);
+        AnalyseChunks("{{}]").FailedSyntaxPosition.Should().Be(3);
+        AnalyseChunks("{{}[]]").FailedSyntaxPosition.Should().Be(5);
+    }
+
+    [TestCase("[({(<(())[]>[[{[]{<()<>>", "}}]])})]")]
+    [TestCase("[(()[<>])]({[<{<<[]>>(", ")}>]})")]
+    public void ExpectedClosingTokensAreCorrect(string input, string expectedClosingTokens)
+    {
+        string.Join("", AnalyseChunks(input).ExpectedClosingTokens).Should().Be(expectedClosingTokens);
+    }
+
+    [TestCase("])}>", 294)]
+    [TestCase("}}]])})]", 288957)]
+    [TestCase(")}>]})", 5566)]
+    public void CalculateScores(string input, long expectedScore)
+    {
+        CalculateScore(input).Should().Be(expectedScore);
+    }
+
+    private long CalculateScore(string input)
+    {
+        long total = 0;
+        foreach(var c in input)
+        {
+            total *= 5;
+            total += ValueOf(c);
+        }
+        return total;
+    }
+
+    private int ValueOf(char c)
+    {
+        if(c == ')') return 1;
+        if(c == ']') return 2;
+        if(c == '}') return 3;
+        if(c == '>') return 4;
+        return 0;
     }
 
     [Test]
@@ -57,13 +92,31 @@ public class Tests
         int score = 0;
         foreach(var line in lines)
         {
-            int failurePosition = FindFailedSyntaxPosition(line);
+            int failurePosition = AnalyseChunks(line).FailedSyntaxPosition;
             if(failurePosition != NoSyntaxErrors)
             {
                 score += GetValue(line[failurePosition]);
             }
         }
         score.Should().Be(299793);
+    }
+
+    [Test]
+    public void GoldenInputTestPart2()
+    {
+        var lines = LoadGoldenInput();
+        var scores = new List<long>();
+        foreach(var line in lines)
+        {
+            var result = AnalyseChunks(line);
+            if(result.FailedSyntaxPosition == NoSyntaxErrors)
+            {
+                scores.Add(CalculateScore(string.Join("", result.ExpectedClosingTokens)));
+            }
+        }
+        scores.Sort();
+        var middleIndex = scores.Count / 2;
+        scores[middleIndex].Should().Be(3654963618);
     }
 
     private int GetValue(char v)
@@ -82,7 +135,7 @@ public class Tests
 
     const int NoSyntaxErrors = -1;
 
-    int FindFailedSyntaxPosition(string input)
+    AnalysisResult AnalyseChunks(string input)
     {
         var expectedClosingTokens = new Stack<char>();
         for(var index = 0; index < input.Length; index++)
@@ -91,11 +144,11 @@ public class Tests
             {
                 if(expectedClosingTokens.Count() == 0)
                 {
-                    return index;
+                    return new AnalysisResult(index, expectedClosingTokens);
                 }
                 else if(input[index] != expectedClosingTokens.Peek())
                 {
-                    return index;
+                    return new AnalysisResult(index, expectedClosingTokens);
                 }
                 expectedClosingTokens.Pop();
             }
@@ -104,8 +157,20 @@ public class Tests
                 expectedClosingTokens.Push(FindClosingToken(input[index]));
             }
         }
-        return NoSyntaxErrors;
+        return new AnalysisResult(NoSyntaxErrors, expectedClosingTokens);
     }
+
+    internal class AnalysisResult
+    {
+        public AnalysisResult(int failedSyntaxPosition, Stack<char> expectedClosingTokens)
+        {
+            FailedSyntaxPosition = failedSyntaxPosition;
+            ExpectedClosingTokens = expectedClosingTokens;
+        }
+
+        public readonly int FailedSyntaxPosition = NoSyntaxErrors;
+        public readonly Stack<char> ExpectedClosingTokens;
+    } 
 
     private char FindClosingToken(char token)
     {
