@@ -55,7 +55,27 @@ public class Day11Tests
             input = result.EnergyLevels;
             flashCount += result.FlashCount;
         }
-        flashCount.Should().Be(0);
+        flashCount.Should().Be(1694);
+    }
+
+    [Test]
+    public void GoldenInputTestPart2()
+    {
+        var lines = LoadGoldenInput().ToList();
+        var input = lines.ToIntGrid();
+        var numberOfOctopi = input.Count * input[0].Count;
+        var stepCount = 0;
+        while(true)
+        {
+            stepCount++;
+            var result = OctopiStepOnce(input);
+            if(result.FlashCount == numberOfOctopi)
+            {
+                break;
+            }
+            input = result.EnergyLevels;
+        }
+        stepCount.Should().Be(346);
     }
 
     private string[] LoadGoldenInput()
